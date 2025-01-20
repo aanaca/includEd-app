@@ -126,7 +126,7 @@ fun PostItem(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = post.likes.toString(),
+                        text = post.likes.toString(), // Exibe apenas um número de curtidas
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

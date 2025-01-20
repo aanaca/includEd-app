@@ -10,7 +10,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.example.included.screens.HomeScreen
+import com.example.included.screens.LoginScreen
 import com.example.included.ui.theme.IncludEdTheme
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,23 +24,37 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Mostrando diretamente a HomeScreen
-                    HomeScreen(
-                        onSignOut = {
-                            Toast.makeText(
-                                this@MainActivity,
-                                "Logout clicado",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        onShowMessage = { message ->
-                            Toast.makeText(
-                                this@MainActivity,
-                                message,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    )
+                    var isLoggedIn by remember {
+                        mutableStateOf(FirebaseAuth.getInstance().currentUser != null)
+                    }
+
+                    if (isLoggedIn) {
+                        HomeScreen(
+                            onSignOut = {
+                                isLoggedIn = false
+                            },
+                            onShowMessage = { message ->
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    message,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    } else {
+                        LoginScreen(
+                            onLoginSuccess = {
+                                isLoggedIn = true // Permitir acesso à HomeScreen
+                            },
+                            onShowMessage = { message ->
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    message,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        )
+                    }
                 }
             }
         }

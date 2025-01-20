@@ -37,7 +37,7 @@ fun HomeScreen(
                 userName = "Usuário $index",
                 content = "Este é um post de exemplo número $index #includEd",
                 timestamp = Date(),
-                likes = (0..50).random(),
+                likes = 0,
                 isLikedByCurrentUser = false,
                 comments = if (index == 0) {
                     listOf(
@@ -47,7 +47,7 @@ fun HomeScreen(
                             userName = "Usuário 2",
                             content = "Ótimo post!",
                             timestamp = Date(),
-                            likes = 5,
+                            likes = 0,
                             isLikedByCurrentUser = true
                         )
                     )
@@ -98,15 +98,17 @@ fun HomeScreen(
                     onLikeClick = {
                         posts = posts.map { currentPost ->
                             if (currentPost.id == post.id) {
+                                // Atualiza as curtidas corretamente
                                 currentPost.copy(
-                                    likes = if (post.isLikedByCurrentUser)
-                                        post.likes - 1
-                                    else
-                                        post.likes + 1,
-                                    isLikedByCurrentUser = !post.isLikedByCurrentUser
+                                    likes = if (currentPost.isLikedByCurrentUser) {
+                                        currentPost.likes - 1 // Decrementa se já está curtido
+                                    } else {
+                                        currentPost.likes + 1 // Incrementa se não está curtido
+                                    },
+                                    isLikedByCurrentUser = !currentPost.isLikedByCurrentUser // Inverte o estado de curtida
                                 )
                             } else {
-                                currentPost
+                                currentPost // Retorna o post atual sem alterações
                             }
                         }
                     },
