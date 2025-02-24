@@ -13,7 +13,7 @@ import androidx.compose.ui.window.DialogProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewPostDialog(
+public fun NewPostDialog(
     onDismiss: () -> Unit,
     onPostCreated: (String) -> Unit
 ) {

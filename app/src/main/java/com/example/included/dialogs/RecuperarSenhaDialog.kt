@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun RecuperarSenhaDialog(
+public fun RecuperarSenhaDialog(
     emailInicial: String = "",
     onDismiss: () -> Unit,
     onEmailEnviado: (String) -> Unit

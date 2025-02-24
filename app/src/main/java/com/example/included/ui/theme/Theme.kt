@@ -7,16 +7,33 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+
+// Cores principais
+val IncludedBlue = Color(135, 206, 235)      // Azul céu principal
+val IncludedBlueDark = Color(115, 186, 215)   // Tom mais escuro
+val IncludedBlueLight = Color(155, 226, 255)  // Tom mais claro
+
+// Cores de fundo
+val BackgroundLight = Color(255, 255, 255)    // Branco
+val BackgroundDark = Color(18, 18, 18)        // Preto
+
+// Cores de superfície
+val SurfaceLight = Color(245, 245, 245)       // Cinza muito claro
+//val SurfaceDark = Color(30, 30, 30)           // Cinza muito escuro
+
+// Cores de texto
+val TextPrimary = Color(33, 33, 33)           // Quase preto
 
 private val DarkColorScheme = darkColorScheme(
     primary = IncludedBlue,
     secondary = IncludedBlueDark,
     tertiary = IncludedBlueLight,
     background = BackgroundDark,
-    surface = SurfaceDark,
+    //surface = SurfaceDark,
     onPrimary = BackgroundLight,
     onSecondary = BackgroundLight,
     onTertiary = BackgroundLight,
@@ -38,7 +55,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun IncludEdTheme(
+fun Theme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {

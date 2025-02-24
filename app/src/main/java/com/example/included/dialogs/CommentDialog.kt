@@ -22,7 +22,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommentDialog(
+public fun CommentDialog(
     comments: List<Comment>,
     postUserId: String,
     onDismiss: () -> Unit,

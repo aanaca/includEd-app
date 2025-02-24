@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 
 @Composable
-fun PasswordTextField(
+public fun PasswordTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,

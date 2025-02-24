@@ -11,7 +11,7 @@ import com.example.included.dialogs.RecuperarSenhaDialog
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun LoginScreen(
+public fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onShowMessage: (String) -> Unit
 ) {
@@ -94,10 +94,37 @@ fun LoginScreen(
         Button(
             onClick = {
                 isLoading = true
-                // Remover a lógica de autenticação
-                onShowMessage("Login realizado com sucesso!") // Mensagem de sucesso
-                onLoginSuccess() // Redirecionar para a HomeScreen
-                isLoading = false
+                if (isRegistrando) {
+                    // Validação do registro
+                    if (senha != confirmarSenha) {
+                        onShowMessage("As senhas não coincidem")
+                        isLoading = false
+                        return@Button
+                    }
+
+                    FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, senha)
+                        .addOnCompleteListener { task ->
+                            isLoading = false
+                            if (task.isSuccessful) {
+                                onShowMessage("Conta criada com sucesso!")
+                                onLoginSuccess()
+                            } else {
+                                onShowMessage("Erro: ${task.exception?.message}")
+                            }
+                        }
+                } else {
+                    // Login
+                    FirebaseAuth.getInstance().signInWithEmailAndPassword(email, senha)
+                        .addOnCompleteListener { task ->
+                            isLoading = false
+                            if (task.isSuccessful) {
+                                onShowMessage("Login realizado com sucesso!")
+                                onLoginSuccess()
+                            } else {
+                                onShowMessage("Erro: ${task.exception?.message}")
+                            }
+                        }
+                }
             },
             enabled = !isLoading && email.isNotEmpty() && senha.isNotEmpty()
                     && (!isRegistrando || (nomeCompleto.isNotEmpty() && confirmarSenha.isNotEmpty())),
@@ -160,7 +187,7 @@ fun LoginScreen(
         RecuperarSenhaDialog(
             emailInicial = email,
             onDismiss = { mostrarDialogRecuperacao = false },
-            onEmailEnviado = { mensagem ->
+            onEmailEnviado = { mensagem: String ->
                 onShowMessage(mensagem)
                 mostrarDialogRecuperacao = false
             }

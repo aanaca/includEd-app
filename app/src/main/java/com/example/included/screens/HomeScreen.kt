@@ -47,7 +47,7 @@ fun HomeScreen(
                             userName = "Usuário 2",
                             content = "Ótimo post!",
                             timestamp = Date(),
-                            likes = 0,
+                            likes = 5,
                             isLikedByCurrentUser = true
                         )
                     )
@@ -98,17 +98,15 @@ fun HomeScreen(
                     onLikeClick = {
                         posts = posts.map { currentPost ->
                             if (currentPost.id == post.id) {
-                                // Atualiza as curtidas corretamente
                                 currentPost.copy(
-                                    likes = if (currentPost.isLikedByCurrentUser) {
-                                        currentPost.likes - 1 // Decrementa se já está curtido
-                                    } else {
-                                        currentPost.likes + 1 // Incrementa se não está curtido
-                                    },
-                                    isLikedByCurrentUser = !currentPost.isLikedByCurrentUser // Inverte o estado de curtida
+                                    likes = if (post.isLikedByCurrentUser)
+                                        post.likes - 1
+                                    else
+                                        post.likes + 1,
+                                    isLikedByCurrentUser = !post.isLikedByCurrentUser
                                 )
                             } else {
-                                currentPost // Retorna o post atual sem alterações
+                                currentPost
                             }
                         }
                     },
@@ -125,7 +123,7 @@ fun HomeScreen(
     if (showNewPostDialog) {
         NewPostDialog(
             onDismiss = { showNewPostDialog = false },
-            onPostCreated = { content ->
+            onPostCreated = { content: String ->
                 val newPost = Post(
                     id = UUID.randomUUID().toString(),
                     userId = "user_atual",
@@ -158,7 +156,7 @@ fun HomeScreen(
             comments = post.comments,
             postUserId = post.userId,
             onDismiss = { showCommentDialog = null },
-            onCommentSend = { commentText ->
+            onCommentSend = { commentText: String ->
                 val newComment = Comment(
                     id = UUID.randomUUID().toString(),
                     userId = "user_atual",
@@ -176,7 +174,7 @@ fun HomeScreen(
                 }
                 onShowMessage("Comentário adicionado!")
             },
-            onCommentLike = { comment ->
+            onCommentLike = { comment: Comment ->
                 posts = posts.map { currentPost ->
                     if (currentPost.id == post.id) {
                         currentPost.copy(
@@ -199,7 +197,7 @@ fun HomeScreen(
                     }
                 }
             },
-            onCommentDelete = { comment ->
+            onCommentDelete = { comment: Comment ->
                 posts = posts.map { currentPost ->
                     if (currentPost.id == post.id) {
                         currentPost.copy(
