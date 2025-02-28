@@ -5,210 +5,298 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.PlatformTextStyle
 import com.example.included.components.PostItem
-import com.example.included.dialogs.CommentDialog
-import com.example.included.dialogs.DeleteConfirmationDialog
-import com.example.included.dialogs.NewPostDialog
-import com.example.included.models.Comment
 import com.example.included.models.Post
+import com.example.included.models.Comment
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onSignOut: () -> Unit,
     onShowMessage: (String) -> Unit
 ) {
+    var posts by remember { mutableStateOf(emptyList<Post>()) }
     var showNewPostDialog by remember { mutableStateOf(false) }
-    var showDeleteConfirmation by remember { mutableStateOf<Post?>(null) }
-    var showCommentDialog by remember { mutableStateOf<Post?>(null) }
-    var posts by remember { mutableStateOf(listOf<Post>()) }
+    var showCommentDialog by remember { mutableStateOf(false) }
+    var selectedPost by remember { mutableStateOf<Post?>(null) }
 
-    // Posts de exemplo
     LaunchedEffect(Unit) {
-        posts = List(5) { index ->
-            Post(
-                id = index.toString(),
-                userId = if (index == 0) "user_atual" else "user$index",
-                userName = "Usuário $index",
-                content = "Este é um post de exemplo número $index #includEd",
-                timestamp = Date(),
-                likes = 0,
-                isLikedByCurrentUser = false,
-                comments = if (index == 0) {
-                    listOf(
-                        Comment(
-                            id = "comment1",
-                            userId = "user2",
-                            userName = "Usuário 2",
-                            content = "Ótimo post!",
-                            timestamp = Date(),
-                            likes = 5,
-                            isLikedByCurrentUser = true
-                        )
-                    )
-                } else {
-                    emptyList()
-                }
-            )
-        }
+        posts = generateSamplePosts()
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("IncludEd") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                actions = {
-                    IconButton(onClick = onSignOut) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Sair",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            )
-        },
+        topBar = { HomeTopBar(onSignOut) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showNewPostDialog = true },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Novo Post")
+                Icon(Icons.Filled.Add, "Novo Post")
             }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            items(posts) { post ->
-                PostItem(
-                    post = post,
-                    onLikeClick = {
-                        posts = posts.map { currentPost ->
-                            if (currentPost.id == post.id) {
-                                currentPost.copy(
-                                    likes = if (post.isLikedByCurrentUser)
-                                        post.likes - 1
-                                    else
-                                        post.likes + 1,
-                                    isLikedByCurrentUser = !post.isLikedByCurrentUser
-                                )
-                            } else {
-                                currentPost
-                            }
-                        }
-                    },
-                    onCommentClick = { showCommentDialog = post },
-                    onDeleteClick = { showDeleteConfirmation = post },
-                    isCurrentUserPost = post.userId == "user_atual"
-                )
-                Divider()
+    ) { padding ->
+        PostsList(
+            posts = posts,
+            padding = padding,
+            onPostAction = { actionType: PostAction, targetPost: Post ->
+                when (actionType) {
+                    PostAction.Comment -> {
+                        selectedPost = targetPost
+                        showCommentDialog = true
+                    }
+                    else -> handlePostAction(
+                        action = actionType,
+                        post = targetPost,
+                        currentPosts = posts,
+                        updatePosts = { updatedPosts -> posts = updatedPosts },
+                        onShowMessage = onShowMessage
+                    )
+                }
             }
-        }
+        )
     }
 
-    // Dialog de novo post
     if (showNewPostDialog) {
         NewPostDialog(
             onDismiss = { showNewPostDialog = false },
-            onPostCreated = { content: String ->
-                val newPost = Post(
-                    id = UUID.randomUUID().toString(),
-                    userId = "user_atual",
-                    userName = "Usuário Atual",
-                    content = content,
-                    timestamp = Date()
+            onPostCreated = { content ->
+                handlePostAction(
+                    PostAction.Create,
+                    Post(content = content),
+                    posts,
+                    { updatedPosts -> posts = updatedPosts },
+                    onShowMessage
                 )
-                posts = listOf(newPost) + posts
                 showNewPostDialog = false
-                onShowMessage("Post publicado!")
             }
         )
     }
 
-    // Dialog de confirmação de exclusão
-    showDeleteConfirmation?.let { post ->
-        DeleteConfirmationDialog(
-            onConfirm = {
-                posts = posts.filter { it.id != post.id }
-                onShowMessage("Post deletado!")
-                showDeleteConfirmation = null
-            },
-            onDismiss = { showDeleteConfirmation = null }
-        )
-    }
-
-    // Dialog de comentários
-    showCommentDialog?.let { post ->
+    if (showCommentDialog && selectedPost != null) {
         CommentDialog(
-            comments = post.comments,
-            postUserId = post.userId,
-            onDismiss = { showCommentDialog = null },
-            onCommentSend = { commentText: String ->
-                val newComment = Comment(
-                    id = UUID.randomUUID().toString(),
-                    userId = "user_atual",
-                    userName = "Usuário Atual",
-                    content = commentText,
-                    timestamp = Date()
-                )
+            onDismiss = {
+                showCommentDialog = false
+                selectedPost = null
+            },
+            onCommentAdded = { commentText ->
+                selectedPost?.let { post ->
+                    val newComment = Comment(
+                        id = UUID.randomUUID().toString(),
+                        userId = "user_atual",
+                        userName = "Usuário Atual",
+                        content = commentText,
+                        timestamp = Date()
+                    )
 
-                posts = posts.map {
-                    if (it.id == post.id) {
-                        it.copy(comments = it.comments + newComment)
-                    } else {
-                        it
+                    posts = posts.map {
+                        if (it.id == post.id) {
+                            it.copy(comments = it.comments + newComment)
+                        } else it
                     }
+                    onShowMessage("Comentário adicionado!")
                 }
-                onShowMessage("Comentário adicionado!")
-            },
-            onCommentLike = { comment: Comment ->
-                posts = posts.map { currentPost ->
-                    if (currentPost.id == post.id) {
-                        currentPost.copy(
-                            comments = currentPost.comments.map { currentComment ->
-                                if (currentComment.id == comment.id) {
-                                    currentComment.copy(
-                                        likes = if (comment.isLikedByCurrentUser)
-                                            comment.likes - 1
-                                        else
-                                            comment.likes + 1,
-                                        isLikedByCurrentUser = !comment.isLikedByCurrentUser
-                                    )
-                                } else {
-                                    currentComment
-                                }
-                            }
-                        )
-                    } else {
-                        currentPost
-                    }
-                }
-            },
-            onCommentDelete = { comment: Comment ->
-                posts = posts.map { currentPost ->
-                    if (currentPost.id == post.id) {
-                        currentPost.copy(
-                            comments = currentPost.comments.filterNot { it.id == comment.id }
-                        )
-                    } else {
-                        currentPost
-                    }
-                }
-                onShowMessage("Comentário excluído!")
+                showCommentDialog = false
+                selectedPost = null
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeTopBar(onSignOut: () -> Unit) {
+    TopAppBar(
+        title = { Text("IncludEd") },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        actions = {
+            IconButton(onClick = onSignOut) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = "Sair",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun NewPostDialog(
+    onDismiss: () -> Unit,
+    onPostCreated: (String) -> Unit
+) {
+    var postContent by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Novo Post") },
+        text = {
+            OutlinedTextField(
+                value = postContent,
+                onValueChange = { newValue -> postContent = newValue },
+                label = { Text("O que você está pensando?") },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                singleLine = false,
+                maxLines = 5
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (postContent.isNotEmpty()) {
+                        onPostCreated(postContent)
+                    }
+                },
+                enabled = postContent.isNotEmpty()
+            ) {
+                Text("Publicar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+private fun CommentDialog(
+    onDismiss: () -> Unit,
+    onCommentAdded: (String) -> Unit
+) {
+    var commentText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Adicionar Comentário") },
+        text = {
+            OutlinedTextField(
+                value = commentText,
+                onValueChange = { newValue ->
+                    commentText = newValue
+                },
+                label = { Text("Seu comentário") },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    platformStyle = PlatformTextStyle(
+                        includeFontPadding = false
+                    )
+                ),
+                singleLine = false,
+                maxLines = 3
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (commentText.isNotEmpty()) {
+                        onCommentAdded(commentText)
+                    }
+                },
+                enabled = commentText.isNotEmpty()
+            ) {
+                Text("Comentar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+private fun PostsList(
+    posts: List<Post>,
+    padding: PaddingValues,
+    onPostAction: (PostAction, Post) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+    ) {
+        items(posts) { post ->
+            PostItem(
+                post = post,
+                onLikeClick = { onPostAction(PostAction.Like, post) },
+                onCommentClick = { onPostAction(PostAction.Comment, post) },
+                onDeleteClick = { onPostAction(PostAction.Delete, post) },
+                isCurrentUserPost = post.userId == "user_atual"
+            )
+            Divider()
+        }
+    }
+}
+
+private fun generateSamplePosts(): List<Post> {
+    return List(5) { index ->
+        Post(
+            id = index.toString(),
+            userId = if (index == 0) "user_atual" else "user$index",
+            userName = "Usuário $index",
+            content = "Post exemplo $index #includEd",
+            timestamp = Date(),
+            likes = 0,
+            isLikedByCurrentUser = false,
+            comments = emptyList()
+        )
+    }
+}
+
+sealed class PostAction {
+    data object Like : PostAction()
+    data object Comment : PostAction()
+    data object Delete : PostAction()
+    data object Create : PostAction()
+}
+
+private fun handlePostAction(
+    action: PostAction,
+    post: Post,
+    currentPosts: List<Post>,
+    updatePosts: (List<Post>) -> Unit,
+    onShowMessage: (String) -> Unit
+) {
+    when (action) {
+        PostAction.Like -> {
+            updatePosts(currentPosts.map {
+                if (it.id == post.id) {
+                    it.copy(
+                        likes = if (post.isLikedByCurrentUser) post.likes - 1 else post.likes + 1,
+                        isLikedByCurrentUser = !post.isLikedByCurrentUser
+                    )
+                } else it
+            })
+            onShowMessage(if (post.isLikedByCurrentUser) "Post descurtido" else "Post curtido")
+        }
+        PostAction.Delete -> {
+            updatePosts(currentPosts.filterNot { it.id == post.id })
+            onShowMessage("Post deletado")
+        }
+        PostAction.Create -> {
+            val newPost = Post(
+                id = UUID.randomUUID().toString(),
+                userId = "user_atual",
+                userName = "Usuário Atual",
+                content = post.content,
+                timestamp = Date()
+            )
+            updatePosts(listOf(newPost) + currentPosts)
+            onShowMessage("Post criado com sucesso!")
+        }
+        else -> { /* Handled in CommentDialog */ }
     }
 }
