@@ -16,12 +16,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.included.components.BottomBar
-import com.example.included.screens.EditProfileScreen
-import com.example.included.screens.HomeScreen
-import com.example.included.screens.LoginScreen
-import com.example.included.screens.ProfileScreen
-import com.example.included.screens.SearchScreen
-import com.example.included.screens.SettingsScreen
+import com.example.included.screens.*
+
 import com.example.included.ui.theme.Theme
 
 class MainActivity : ComponentActivity() {
@@ -38,7 +34,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Scaffold(
-                        // Oculta a BottomBar nas telas de login, edição de perfil e configurações.
                         bottomBar = {
                             if (currentRoute != "login" &&
                                 currentRoute != "edit_profile" &&
@@ -56,12 +51,11 @@ class MainActivity : ComponentActivity() {
                     ) { paddingValues ->
                         NavHost(
                             navController = navController,
-                            // Inicia direto na tela "home"
-                            startDestination = "home",
+                            // ⚠️ Agora inicia na tela de login!
+                            startDestination = "login",
                             modifier = Modifier.padding(paddingValues)
                         ) {
-                            /*
-                            // Tela de Login (mantida como comentário para referência futura)
+                            // Tela de Login
                             composable("login") {
                                 LoginScreen(
                                     onLoginSuccess = {
@@ -78,7 +72,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            */
+                            // Tela Home
                             composable("home") {
                                 HomeScreen(
                                     onSignOut = {
@@ -87,11 +81,8 @@ class MainActivity : ComponentActivity() {
                                             "Logout clicado",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        // Pode direcionar para o login futuramente
                                         navController.navigate("login") {
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                inclusive = true
-                                            }
+                                            popUpTo("home") { inclusive = true }
                                         }
                                     },
                                     onShowMessage = { message ->
@@ -104,15 +95,13 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable("search") {
-                                SearchScreen(
-                                    onShowMessage = { message ->
-                                        Toast.makeText(
-                                            this@MainActivity,
-                                            message,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                )
+                                SearchScreen { message ->
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        message,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                             }
                             composable("profile") {
                                 ProfileScreen(
@@ -130,7 +119,7 @@ class MainActivity : ComponentActivity() {
                             composable("edit_profile") {
                                 EditProfileScreen(
                                     onBack = { navController.popBackStack() },
-                                    onSave = { name, handle, bio ->
+                                    onSave = { _, _, _ ->
                                         Toast.makeText(
                                             this@MainActivity,
                                             "Perfil atualizado!",
@@ -140,7 +129,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
-                            // Nova rota para a tela de Configurações
                             composable("settings") {
                                 SettingsScreen(
                                     onBack = { navController.popBackStack() },
