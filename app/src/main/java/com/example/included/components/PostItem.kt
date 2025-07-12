@@ -1,6 +1,8 @@
 package com.example.included.components
 
 import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -14,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.example.included.models.Post
 import com.example.included.models.Comment
 import java.text.SimpleDateFormat
@@ -106,12 +109,31 @@ fun PostItem(
                 }
             }
 
-            // Conteúdo
+            // Conteúdo do texto do post
             Text(
                 text = post.content,
                 modifier = Modifier.padding(vertical = 8.dp),
                 style = MaterialTheme.typography.bodyMedium
             )
+
+            // Exibir anexo se existir e for imagem
+            post.attachmentUriString?.let { uriString ->
+                val uri = Uri.parse(uriString)
+                if (uriString.endsWith(".jpg", ignoreCase = true) || uriString.endsWith(".png", ignoreCase = true)) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Image(
+                        painter = rememberAsyncImagePainter(uri),
+                        contentDescription = "Imagem anexada",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    )
+                } else {
+                    // Para outros tipos de arquivo, só mostrar o nome ou link simples
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Arquivo anexado: $uriString")
+                }
+            }
 
             // Linha de ações (Like e Comentários)
             Row(
@@ -158,7 +180,7 @@ fun PostItem(
                 }
             }
 
-            // Seção de Comentários
+            // Seção de Comentários expandida
             if (expanded) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Divider()
@@ -185,7 +207,7 @@ fun PostItem(
 }
 
 @Composable
-private fun CommentItem(comment: Comment) {
+private fun CommentItem(comment: com.example.included.models.Comment) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
