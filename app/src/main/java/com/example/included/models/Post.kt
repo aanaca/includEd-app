@@ -10,7 +10,10 @@ data class Post(
     val timestamp: Date = Date(),
     val likes: Int = 0,
     val isLikedByCurrentUser: Boolean = false,
-    val comments: List<Comment> = emptyList()
+    val comments: List<Comment> = emptyList(),
+
+    // Campo novo para guardar o URI do arquivo anexado (imagem, vídeo, doc, etc)
+    val attachmentUriString: String? = null
 )
 
 data class Comment(
