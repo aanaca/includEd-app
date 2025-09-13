@@ -9,28 +9,43 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.unit.dp
 import com.example.included.components.PostItem
 import com.example.included.models.Post
 import com.example.included.models.Comment
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onSignOut: () -> Unit,
-    onShowMessage: (String) -> Unit
+    onShowMessage: (String) -> Unit,
+    onNavigateToPost: (Post) -> Unit = {},
+    sharedViewModel: SharedViewModel
 ) {
-    var posts by remember { mutableStateOf(emptyList<Post>()) }
     var showNewPostDialog by remember { mutableStateOf(false) }
     var showCommentDialog by remember { mutableStateOf(false) }
     var selectedPost by remember { mutableStateOf<Post?>(null) }
 
-    LaunchedEffect(Unit) {
-        posts = generateSamplePosts()
-    }
-
     Scaffold(
-        topBar = { HomeTopBar(onSignOut) },
+        topBar = {
+            TopAppBar(
+                title = { Text("IncludEd") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                actions = {
+                    IconButton(onClick = onSignOut) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Sair",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showNewPostDialog = true },
@@ -41,38 +56,52 @@ fun HomeScreen(
             }
         }
     ) { padding ->
-        PostsList(
-            posts = posts,
-            padding = padding,
-            onPostAction = { actionType: PostAction, targetPost: Post ->
-                when (actionType) {
-                    PostAction.Comment -> {
-                        selectedPost = targetPost
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(sharedViewModel.posts) { post ->
+                PostItem(
+                    post = post,
+                    onPostClick = { onNavigateToPost(post) },
+                    onLikeClick = {
+                        sharedViewModel.handlePostAction(PostAction.Like, post)
+                        onShowMessage(if (post.isLikedByCurrentUser) "Post descurtido" else "Post curtido")
+                    },
+                    onCommentClick = {
+                        selectedPost = post
                         showCommentDialog = true
-                    }
-                    else -> handlePostAction(
-                        action = actionType,
-                        post = targetPost,
-                        currentPosts = posts,
-                        updatePosts = { updatedPosts -> posts = updatedPosts },
-                        onShowMessage = onShowMessage
-                    )
-                }
+                    },
+                    onDeleteClick = if (post.userId == "user_atual") {
+                        {
+                            sharedViewModel.handlePostAction(PostAction.Delete, post)
+                            onShowMessage("Post deletado")
+                        }
+                    } else null,
+                    isCurrentUserPost = post.userId == "user_atual"
+                )
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
             }
-        )
+        }
     }
 
     if (showNewPostDialog) {
         NewPostDialog(
             onDismiss = { showNewPostDialog = false },
             onPostCreated = { content ->
-                handlePostAction(
-                    PostAction.Create,
-                    Post(content = content),
-                    posts,
-                    { updatedPosts -> posts = updatedPosts },
-                    onShowMessage
+                val newPost = Post(
+                    id = UUID.randomUUID().toString(),
+                    userId = "user_atual",
+                    userName = "Usuário Atual",
+                    userHandle = "@usuario_atual",
+                    content = content,
+                    timestamp = Date()
                 )
+                sharedViewModel.handlePostAction(PostAction.Create, newPost)
+                onShowMessage("Post criado com sucesso!")
                 showNewPostDialog = false
             }
         )
@@ -93,12 +122,7 @@ fun HomeScreen(
                         content = commentText,
                         timestamp = Date()
                     )
-
-                    posts = posts.map {
-                        if (it.id == post.id) {
-                            it.copy(comments = it.comments + newComment)
-                        } else it
-                    }
+                    sharedViewModel.addComment(post.id, newComment)
                     onShowMessage("Comentário adicionado!")
                 }
                 showCommentDialog = false
@@ -106,27 +130,6 @@ fun HomeScreen(
             }
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeTopBar(onSignOut: () -> Unit) {
-    TopAppBar(
-        title = { Text("IncludEd") },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            titleContentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        actions = {
-            IconButton(onClick = onSignOut) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = "Sair",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    )
 }
 
 @Composable
@@ -183,16 +186,10 @@ private fun CommentDialog(
         text = {
             OutlinedTextField(
                 value = commentText,
-                onValueChange = { newValue ->
-                    commentText = newValue
-                },
+                onValueChange = { commentText = it },
                 label = { Text("Seu comentário") },
                 modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    platformStyle = PlatformTextStyle(
-                        includeFontPadding = false
-                    )
-                ),
+                textStyle = MaterialTheme.typography.bodyLarge,
                 singleLine = false,
                 maxLines = 3
             )
@@ -217,86 +214,10 @@ private fun CommentDialog(
     )
 }
 
-@Composable
-private fun PostsList(
-    posts: List<Post>,
-    padding: PaddingValues,
-    onPostAction: (PostAction, Post) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-    ) {
-        items(posts) { post ->
-            PostItem(
-                post = post,
-                onLikeClick = { onPostAction(PostAction.Like, post) },
-                onCommentClick = { onPostAction(PostAction.Comment, post) },
-                onDeleteClick = { onPostAction(PostAction.Delete, post) },
-                isCurrentUserPost = post.userId == "user_atual"
-            )
-            Divider()
-        }
-    }
-}
-
-private fun generateSamplePosts(): List<Post> {
-    return List(5) { index ->
-        Post(
-            id = index.toString(),
-            userId = if (index == 0) "user_atual" else "user$index",
-            userName = "Usuário $index",
-            content = "Post exemplo $index #includEd",
-            timestamp = Date(),
-            likes = 0,
-            isLikedByCurrentUser = false,
-            comments = emptyList()
-        )
-    }
-}
-
 sealed class PostAction {
     data object Like : PostAction()
     data object Comment : PostAction()
     data object Delete : PostAction()
     data object Create : PostAction()
-}
-
-private fun handlePostAction(
-    action: PostAction,
-    post: Post,
-    currentPosts: List<Post>,
-    updatePosts: (List<Post>) -> Unit,
-    onShowMessage: (String) -> Unit
-) {
-    when (action) {
-        PostAction.Like -> {
-            updatePosts(currentPosts.map {
-                if (it.id == post.id) {
-                    it.copy(
-                        likes = if (post.isLikedByCurrentUser) post.likes - 1 else post.likes + 1,
-                        isLikedByCurrentUser = !post.isLikedByCurrentUser
-                    )
-                } else it
-            })
-            onShowMessage(if (post.isLikedByCurrentUser) "Post descurtido" else "Post curtido")
-        }
-        PostAction.Delete -> {
-            updatePosts(currentPosts.filterNot { it.id == post.id })
-            onShowMessage("Post deletado")
-        }
-        PostAction.Create -> {
-            val newPost = Post(
-                id = UUID.randomUUID().toString(),
-                userId = "user_atual",
-                userName = "Usuário Atual",
-                content = post.content,
-                timestamp = Date()
-            )
-            updatePosts(listOf(newPost) + currentPosts)
-            onShowMessage("Post criado com sucesso!")
-        }
-        else -> { /* Handled in CommentDialog */ }
-    }
+    data object View : PostAction()
 }

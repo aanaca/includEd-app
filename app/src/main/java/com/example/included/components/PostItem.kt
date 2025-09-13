@@ -1,106 +1,115 @@
 package com.example.included.components
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.included.models.Post
-import com.example.included.models.Comment
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostItem(
     post: Post,
-    onLikeClick: () -> Unit,
-    onCommentClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    isCurrentUserPost: Boolean = false
+    onPostClick: (Post) -> Unit,
+    onLikeClick: (Post) -> Unit,
+    onCommentClick: (Post) -> Unit,
+    onDeleteClick: ((Post) -> Unit)? = null,
+    isCurrentUserPost: Boolean = false,
+    profileImageUrl: String? = null
 ) {
-    val context = LocalContext.current
-    var showMenu by remember { mutableStateOf(false) }
-    var expanded by remember { mutableStateOf(false) }
-
-    ElevatedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        onClick = { expanded = !expanded }
+            .clickable { onPostClick(post) },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Cabeçalho
+            // Cabeçalho do post
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = post.userName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                // Foto de perfil e informações do usuário
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
-                            .format(post.timestamp),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    // Foto de perfil
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary
+                    ) {
+                        if (profileImageUrl != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(profileImageUrl),
+                                contentDescription = "Foto de Perfil",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = post.userName.firstOrNull()?.toString() ?: "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
+                    }
 
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Nome e handle do usuário
+                    Column {
+                        Text(
+                            text = post.userName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = post.userHandle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+
+                // Menu de opções (apenas para posts do usuário atual)
+                if (isCurrentUserPost && onDeleteClick != null) {
+                    var showMenu by remember { mutableStateOf(false) }
                     Box {
-                        IconButton(
-                            onClick = { showMenu = true }
-                        ) {
+                        IconButton(onClick = { showMenu = true }) {
                             Icon(
-                                Icons.Outlined.MoreVert,
+                                Icons.Default.MoreVert,
                                 contentDescription = "Mais opções"
                             )
                         }
-
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            if (isCurrentUserPost) {
-                                DropdownMenuItem(
-                                    text = { Text("Excluir") },
-                                    onClick = {
-                                        onDeleteClick()
-                                        showMenu = false
-                                    },
-                                    colors = MenuDefaults.itemColors(
-                                        textColor = MaterialTheme.colorScheme.error
-                                    )
-                                )
-                            }
                             DropdownMenuItem(
-                                text = { Text("Compartilhar") },
+                                text = { Text("Excluir") },
                                 onClick = {
-                                    val sendIntent = Intent().apply {
-                                        action = Intent.ACTION_SEND
-                                        putExtra(Intent.EXTRA_TEXT, post.content)
-                                        type = "text/plain"
-                                    }
-                                    context.startActivity(Intent.createChooser(sendIntent, null))
+                                    onDeleteClick(post)
                                     showMenu = false
                                 }
                             )
@@ -109,129 +118,53 @@ fun PostItem(
                 }
             }
 
-            // Conteúdo do texto do post
+            // Conteúdo do post
             Text(
                 text = post.content,
-                modifier = Modifier.padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
             )
 
-            // Exibir anexo se existir e for imagem
-            post.attachmentUriString?.let { uriString ->
-                val uri = Uri.parse(uriString)
-                if (uriString.endsWith(".jpg", ignoreCase = true) || uriString.endsWith(".png", ignoreCase = true)) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Image(
-                        painter = rememberAsyncImagePainter(uri),
-                        contentDescription = "Imagem anexada",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                    )
-                } else {
-                    // Para outros tipos de arquivo, só mostrar o nome ou link simples
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Arquivo anexado: $uriString")
-                }
-            }
+            // Data
+            Text(
+                text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
+                    .format(post.timestamp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline
+            )
 
-            // Linha de ações (Like e Comentários)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Botões de interação
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Botão de Like
-                IconButton(onClick = onLikeClick) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (post.isLikedByCurrentUser)
-                                Icons.Filled.Favorite
-                            else
-                                Icons.Outlined.Favorite,
-                            contentDescription = "Curtir",
-                            tint = if (post.isLikedByCurrentUser)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.outline
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = post.likes.toString(),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-
-                // Botão de Comentários
-                IconButton(onClick = onCommentClick) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Outlined.ChatBubbleOutline,
-                            contentDescription = "Comentários",
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = post.comments.size.toString(),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-
-            // Seção de Comentários expandida
-            if (expanded) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Divider()
-                if (post.comments.isNotEmpty()) {
+                TextButton(
+                    onClick = { onCommentClick(post) },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
                     Text(
-                        text = "Comentários",
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        "💬 ${post.commentCount}",
+                        color = MaterialTheme.colorScheme.outline
                     )
-                    post.comments.forEach { comment ->
-                        CommentItem(comment = comment)
-                    }
-                } else {
+                }
+
+                TextButton(
+                    onClick = { onLikeClick(post) },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
                     Text(
-                        text = "Nenhum comentário ainda",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        "${if (post.isLikedByCurrentUser) "❤️" else "♡"} ${post.likes}",
+                        color = if (post.isLikedByCurrentUser)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.outline
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun CommentItem(comment: com.example.included.models.Comment) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = comment.userName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
-                    .format(comment.timestamp),
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-        Text(
-            text = comment.content,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 2.dp)
-        )
     }
 }
