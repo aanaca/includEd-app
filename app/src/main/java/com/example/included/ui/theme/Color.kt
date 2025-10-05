@@ -17,3 +17,11 @@ val OnSurfaceDark = Color(230, 225, 229) // Cinza claro
 
 // Cores de destaque
 val White = Color(255, 255, 255)         // Branco puro
+
+
+// --- Cores das Atividades ---
+// Estas cores serão usadas nos cards da ActivitiesScreen para diferenciá-los visualmente.
+val MathGreen = Color(0xFF4CAF50) // Verde vibrante para Matemática
+val ReadingBlue = Color(0xFF2196F3) // Azul padrão para Leitura
+val LogicPurple = Color(0xFF9C27B0) // Roxo para Lógica
+val MemoryOrange = Color(0xFFFF9800) // Laranja para Memória
