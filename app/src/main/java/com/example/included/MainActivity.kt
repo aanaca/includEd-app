@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.*
 import androidx.activity.viewModels
 import com.example.included.components.BottomBar
+import com.example.included.models.Post // Importação para o modelo Post (necessário para o PostDetailScreen)
 import com.example.included.models.User
 import com.example.included.screens.*
 import com.example.included.ui.theme.Theme
@@ -43,8 +44,10 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
+                        // ADIÇÃO: Incluindo 'reading_detail' para esconder o BottomBar.
                         if (currentRoute != "login" && currentRoute != "edit_profile" && currentRoute != "settings" &&
-                            currentRoute != "followers" && currentRoute != "following") {
+                            currentRoute != "followers" && currentRoute != "following" && currentRoute != "math_detail" &&
+                            currentRoute != "reading_detail") { // Rota de Leitura
                             BottomBar(currentRoute, { route ->
                                 navController.navigate(route) {
                                     popUpTo(navController.graph.startDestinationId)
@@ -84,6 +87,34 @@ class MainActivity : ComponentActivity() {
                         composable("search") {
                             SearchScreen { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
                         }
+
+                        composable("activities_list") {
+                            ActivitiesScreen(
+                                onCategoryClick = { categoryRoute ->
+                                    // Navega para a rota de detalhe da atividade (ex: "math_detail" ou "reading_detail")
+                                    navController.navigate(categoryRoute)
+                                }
+                            )
+                        }
+
+                        // ROTA: Matemática
+                        composable("math_detail") {
+                            MathActivitiesScreen(
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // ROTA: Leitura (NOVA ADIÇÃO)
+                        composable("reading_detail") {
+                            ReadingActivitiesScreen(
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+                        // --- FIM ROTA DE LEITURA ---
 
                         composable("notifications") {
                             NotificationsScreen(onNotificationClick = { postId ->
@@ -154,14 +185,16 @@ class MainActivity : ComponentActivity() {
                                 PostDetailScreen(
                                     post = it,
                                     onBack = { navController.popBackStack() },
-                                    userName = "Nome de Usuário", // Você pode passar o nome real do usuário aqui
-                                    userHandle = "@usuarioExemplo", // E o handle real aqui
+                                    userName = "Nome de Usuário",
+                                    userHandle = "@usuarioExemplo",
                                     onShowMessage = { message ->
                                         Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
                         }
+
+                        // Rotas restantes (Logic, Memory) serão adicionadas aqui
                     }
                 }
             }
