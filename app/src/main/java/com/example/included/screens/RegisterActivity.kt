@@ -1,35 +1,110 @@
 package com.example.included.screens
-import com.example.included.R
 
-import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 
-class RegisterActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_register)
+// Tela de registro que permite aos usuários criar uma nova conta
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegisterScreen(
+    // Callback chamado quando o registro é bem-sucedido
+    onRegisterSuccess: () -> Unit,
+    // Callback para mostrar mensagens ao usuário
+    onShowMessage: (String) -> Unit
+) {
+    // Estados para armazenar os valores dos campos do formulário
+    var email by remember { mutableStateOf("") }
+    var confirmEmail by remember { mutableStateOf("") }
+    var senha by remember { mutableStateOf("") }
+    var confirmSenha by remember { mutableStateOf("") }
 
-        // Referências aos campos do layout
-        val email = findViewById<EditText>(R.id.etEmail)
-        val confirmEmail = findViewById<EditText>(R.id.etConfirmEmail)
-        val senha = findViewById<EditText>(R.id.etSenha)
-        val confirmSenha = findViewById<EditText>(R.id.etConfirmSenha)
-        val btnRegistrar = findViewById<Button>(R.id.btnCriarConta)
+    // Layout principal em coluna
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Campo de email
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
 
-        // Configura o clique do botão Registrar
-        btnRegistrar.setOnClickListener {
-            val emailText = email.text.toString().trim()
-            val confirmEmailText = confirmEmail.text.toString().trim()
-            val senhaText = senha.text.toString().trim()
-            val confirmSenhaText = confirmSenha.text.toString().trim()
+        Spacer(modifier = Modifier.height(8.dp))
 
-            // Validação dos campos
-            if (emailText.isEmpty() || confirmEmailText.isEmpty() || senhaText.isEmpty() || confirmSenhaText.isEmpty()) {
-                Toast.makeText(this, "Preencha todos os campos!", Toast.LENGTH_SHORT).show()
-            }
+        // Campo de confirmação de email
+        OutlinedTextField(
+            value = confirmEmail,
+            onValueChange = { confirmEmail = it },
+            label = { Text("Confirmar Email") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Campo de senha com visualização protegida
+        OutlinedTextField(
+            value = senha,
+            onValueChange = { senha = it },
+            label = { Text("Senha") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Campo de confirmação de senha com visualização protegida
+        OutlinedTextField(
+            value = confirmSenha,
+            onValueChange = { confirmSenha = it },
+            label = { Text("Confirmar Senha") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Botão de criar conta com validações
+        Button(
+            onClick = {
+                // Validação de campos vazios
+                if (email.isEmpty() || confirmEmail.isEmpty() ||
+                    senha.isEmpty() || confirmSenha.isEmpty()) {
+                    onShowMessage("Preencha todos os campos!")
+                    return@Button
+                }
+
+                // Validação de emails correspondentes
+                if (email != confirmEmail) {
+                    onShowMessage("Os emails não coincidem!")
+                    return@Button
+                }
+
+                // Validação de senhas correspondentes
+                if (senha != confirmSenha) {
+                    onShowMessage("As senhas não coincidem!")
+                    return@Button
+                }
+
+                // Se todas as validações passarem, chama o callback de sucesso
+                onRegisterSuccess()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Criar Conta")
         }
     }
 }
