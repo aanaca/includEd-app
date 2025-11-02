@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.*
 import androidx.activity.viewModels
 import com.example.included.components.BottomBar
-import com.example.included.models.Post // Importação para o modelo Post (necessário para o PostDetailScreen)
+import com.example.included.models.Post
 import com.example.included.models.User
 import com.example.included.screens.*
 import com.example.included.ui.theme.Theme
@@ -44,10 +44,13 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        // ADIÇÃO: Incluindo 'reading_detail' para esconder o BottomBar.
-                        if (currentRoute != "login" && currentRoute != "edit_profile" && currentRoute != "settings" &&
-                            currentRoute != "followers" && currentRoute != "following" && currentRoute != "math_detail" &&
-                            currentRoute != "reading_detail") { // Rota de Leitura
+                        val routesWithoutBottomBar = listOf(
+                            "login", "edit_profile", "settings", "followers", "following",
+                            "math_detail", "reading_detail",
+                            "sequencing_activity_route", "pattern_activity_route",
+                            "memory_game_route" // Adicionado para a navegação do Memory Game
+                        )
+                        if (currentRoute !in routesWithoutBottomBar) {
                             BottomBar(currentRoute, { route ->
                                 navController.navigate(route) {
                                     popUpTo(navController.graph.startDestinationId)
@@ -88,16 +91,15 @@ class MainActivity : ComponentActivity() {
                             SearchScreen { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
                         }
 
+                        // ROTA DE LISTA DE ATIVIDADES (ActivitiesScreen)
                         composable("activities_list") {
                             ActivitiesScreen(
                                 onCategoryClick = { categoryRoute ->
-                                    // Navega para a rota de detalhe da atividade (ex: "math_detail" ou "reading_detail")
                                     navController.navigate(categoryRoute)
                                 }
                             )
                         }
 
-                        // ROTA: Matemática
                         composable("math_detail") {
                             MathActivitiesScreen(
                                 onBackClick = {
@@ -106,7 +108,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // ROTA: Leitura (NOVA ADIÇÃO)
                         composable("reading_detail") {
                             ReadingActivitiesScreen(
                                 onBackClick = {
@@ -114,7 +115,45 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        // --- FIM ROTA DE LEITURA ---
+
+                        // ROTA PRINCIPAL: LÓGICA -> MENU
+                        composable("logic_detail") {
+                            LogicMenuScreen(
+                                onBackClick = { navController.popBackStack() },
+                                onNavigateToSequencing = { navController.navigate("sequencing_activity_route") },
+                                onNavigateToPattern = { navController.navigate("pattern_activity_route") }
+                                // Não precisa adicionar a navegação de memória aqui, pois ela será tratada no ActivitiesScreen.
+                            )
+                        }
+
+                        // ROTA ESPECÍFICA: Lógica - Sequência de Ações
+                        composable("sequencing_activity_route") {
+                            SequencingScreen(
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // ROTA ESPECÍFICA: Lógica - Padrões Visuais
+                        composable("pattern_activity_route") {
+                            PatternScreen(
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // ROTA NOVA E CORRETA: JOGO DA MEMÓRIA
+                        composable("memory_game_route") {
+                            MemoryGameScreen(
+                                onBackClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // ... (Resto das rotas, omitido para brevidade)
 
                         composable("notifications") {
                             NotificationsScreen(onNotificationClick = { postId ->
@@ -194,7 +233,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        // Rotas restantes (Logic, Memory) serão adicionadas aqui
+
                     }
                 }
             }
