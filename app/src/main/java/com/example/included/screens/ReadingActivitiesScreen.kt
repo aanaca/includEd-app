@@ -24,9 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.included.viewmodel.ReadingViewModel
+import com.example.included.viewmodel.QuizState // Adicionado
 import com.example.included.ui.theme.ReadingBlue
 import com.example.included.ui.theme.White
 import androidx.compose.foundation.layout.FlowRow
+import com.example.included.R // Adicionei esta importação por segurança
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -34,19 +36,28 @@ fun ReadingActivitiesScreen(
     onBackClick: () -> Unit,
     viewModel: ReadingViewModel = viewModel(factory = ReadingViewModel.Factory)
 ) {
-    val currentStory by viewModel.currentStory.collectAsState()
+    // CORRIGIDO: Coletando o estado da frase e da história
+    val currentStoryState by viewModel.currentStory.collectAsState()
     val currentPhraseIndex by viewModel.currentPhraseIndex.collectAsState()
-    val isQuizActive by viewModel.isQuizActive.collectAsState()
 
-    // CORREÇÃO: Variável definida aqui para que seja acessível a todos os blocos de código abaixo.
-    val isLastPhrase = currentPhraseIndex >= currentStory.visualSupport.size - 1
+    // Verifica se a história está carregada
+    val currentStory = currentStoryState ?: run {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    // Lógica de estado
+    val isQuizTime = currentPhraseIndex >= currentStory.visualSupport.size
+    val isLastPhrase = currentPhraseIndex == currentStory.visualSupport.lastIndex
 
     val readingColor = ReadingBlue
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isQuizActive) "Questionário" else "Leitura e Compreensão") },
+                title = { Text(if (isQuizTime) "Questionário" else "Leitura e Compreensão") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
@@ -61,7 +72,7 @@ fun ReadingActivitiesScreen(
         }
     ) { paddingValues ->
 
-        if (isQuizActive) {
+        if (isQuizTime) {
             Box(modifier = Modifier.padding(paddingValues)) {
                 QuizScreen(viewModel = viewModel)
             }
@@ -118,7 +129,7 @@ fun ReadingActivitiesScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable { viewModel.nextPhrase() },
+                        .clickable { viewModel.nextPhrase() }, // Chama a função nextPhrase() do ViewModel.
                     colors = CardDefaults.cardColors(containerColor = readingColor.copy(alpha = 0.9f)),
                     elevation = CardDefaults.cardElevation(8.dp)
                 ) {
@@ -128,7 +139,7 @@ fun ReadingActivitiesScreen(
                         val instructionText = if (!isLastPhrase)
                             "TOQUE AQUI PARA CONTINUAR"
                         else
-                            "LEITURA CONCLUÍDA"
+                            "TOQUE AQUI PARA INICIAR O QUESTIONÁRIO"
 
                         Row(
                             modifier = Modifier
@@ -137,30 +148,26 @@ fun ReadingActivitiesScreen(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            if (!isLastPhrase) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Toque para continuar",
-                                    tint = Color.Yellow,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "Toque para continuar",
+                                tint = Color.Yellow,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = instructionText,
                                 fontSize = 16.sp,
-                                color = if (!isLastPhrase) Color.Yellow else White.copy(alpha = 0.8f),
+                                color = Color.Yellow,
                                 fontWeight = FontWeight.ExtraBold
                             )
-                            if (!isLastPhrase) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = "Toque para continuar",
-                                    tint = Color.Yellow,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = "Toque para continuar",
+                                tint = Color.Yellow,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
 
                         // B. Fluxo de Texto (FlowRow)
@@ -193,22 +200,13 @@ fun ReadingActivitiesScreen(
                 // 4. Rodapé
                 if (isLastPhrase) {
                     Text(
-                        text = "Conclua o questionário para avançar.",
+                        text = "Toque no texto acima para ir para as perguntas.",
                         fontSize = 16.sp,
                         color = Color.Gray
                     )
-                } else {
-                    Button(
-                        onClick = { viewModel.nextPhrase() },
-                        enabled = false,
-                        colors = ButtonDefaults.buttonColors(containerColor = readingColor.copy(alpha = 0.5f)),
-                        modifier = Modifier
-                            .fillMaxWidth(0.6f)
-                            .height(50.dp)
-                    ) {
-                        Text("Continue Lendo", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
