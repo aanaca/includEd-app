@@ -6,14 +6,13 @@ import androidx.annotation.DrawableRes
 enum class StoryType(val label: String) {
     SOCIAL("História Social"),
     EMOTIONAL("Habilidade Emocional"), 
-    SEQUENTIAL("Sequência de Ações") 
+    SEQUENTIAL("Sequência de Ações")
 }
 
 
 data class VisualSupportItem(
     val phrase: String,
     @get:DrawableRes val imageResId: Int 
-)
 
 
 data class ReadingStory(
