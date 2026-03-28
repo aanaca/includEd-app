@@ -212,7 +212,7 @@ fun ProfileScreen(
                                     Text(text = " " + when(userType){
                                         "Educador" -> "🎓"
                                         "Especialista" -> "🩺"
-                                        else -> "🏠"
+                                        else -> "❤\uFE0F"
                                     }, fontSize = 12.sp)
                                 }
                                 Text(text = post.timestamp, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
