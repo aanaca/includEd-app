@@ -215,17 +215,12 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("post_detail/{postId}") { backStackEntry ->
-                            val postId = backStackEntry.arguments?.getString("postId")?.toIntOrNull()
-                            val post = listOf(
-                                Post(1, "Primeiro post! Bem-vindo ao meu perfil.", "10/01/2023 10:00"),
-                                Post(2, "Compartilhando minhas ideias.", "12/01/2023 15:30")
-                            ).find { it.id == postId }
+                            val postId = backStackEntry.arguments?.getString("postId")
+                            val post = sharedViewModel.posts.find { it.id == postId }
                             post?.let {
                                 PostDetailScreen(
                                     post = it,
                                     onBack = { navController.popBackStack() },
-                                    userName = "Nome de Usuário",
-                                    userHandle = "@usuarioExemplo",
                                     onShowMessage = { message ->
                                         Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
                                     }
