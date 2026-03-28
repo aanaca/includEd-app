@@ -15,14 +15,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import coil.compose.rememberAsyncImagePainter
-
-data class Comment(
-    val id: Int,
-    val author: String,
-    val authorHandle: String = "@user",
-    val content: String,
-    val timestamp: String = "Agora"
-)
+import com.example.included.models.Post
+import com.example.included.models.Comment
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,12 +30,25 @@ fun PostDetailScreen(
     profileImageUri: String? = null,
     onShowMessage: (String) -> Unit = {}
 ) {
-    var isLiked by remember { mutableStateOf(false) }
-    var comments by remember {
-        mutableStateOf(
-            listOf(
-                Comment(1, "João Silva", "@user1", "Comentário legal!", "5min atrás"),
-                Comment(2, "Maria Santos", "@user2", "Gostei do post!", "10min atrás")
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
+
+    var isLiked by remember { mutableStateOf(post.isLikedByCurrentUser) }
+    var likeCount by remember { mutableStateOf(post.likes) }
+    val comments = post.comments.ifEmpty {
+        listOf(
+            Comment(
+                id = "1",
+                userId = "user1",
+                userName = "João Silva",
+                content = "Comentário legal!",
+                timestamp = Date()
+            ),
+            Comment(
+                id = "2",
+                userId = "user2",
+                userName = "Maria Santos",
+                content = "Gostei do post!",
+                timestamp = Date()
             )
         )
     }
@@ -75,12 +84,10 @@ fun PostDetailScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-                        // Cabeçalho do post
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Foto de perfil
                             Surface(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -96,7 +103,7 @@ fun PostDetailScreen(
                                 } else {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(
-                                            text = userName.firstOrNull()?.toString() ?: "",
+                                            text = post.userName.firstOrNull()?.toString() ?: "",
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = MaterialTheme.colorScheme.onPrimary
                                         )
@@ -108,12 +115,12 @@ fun PostDetailScreen(
 
                             Column {
                                 Text(
-                                    text = userName,
+                                    text = post.userName,
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = userHandle,
+                                    text = post.userHandle,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.outline
                                 )
@@ -122,14 +129,14 @@ fun PostDetailScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Conteúdo do post
                         Text(
                             text = post.content,
                             style = MaterialTheme.typography.bodyLarge
                         )
 
+
                         Text(
-                            text = post.timestamp,
+                            text = dateFormat.format(post.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                             modifier = Modifier.padding(top = 8.dp)
@@ -137,7 +144,6 @@ fun PostDetailScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Botões de interação
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -155,13 +161,17 @@ fun PostDetailScreen(
                             TextButton(
                                 onClick = {
                                     isLiked = !isLiked
+                                    likeCount = if (isLiked) likeCount + 1 else likeCount - 1
                                     onShowMessage(if (isLiked) "Post curtido!" else "Curtida removida")
                                 },
                                 contentPadding = PaddingValues(0.dp)
                             ) {
                                 Text(
-                                    "${if (isLiked) "❤️" else "♡"} ${post.likeCount + (if (isLiked) 1 else 0)}",
-                                    color = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                    "${if (isLiked) "❤️" else "♡"} $likeCount",
+                                    color = if (isLiked)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.outline
                                 )
                             }
                         }
@@ -169,7 +179,6 @@ fun PostDetailScreen(
                 }
             }
 
-            // Seção de comentários
             item {
                 Text(
                     "Comentários",
@@ -179,7 +188,7 @@ fun PostDetailScreen(
                 Divider()
             }
 
-            // Lista de comentários
+
             items(comments) { comment ->
                 Card(
                     colors = CardDefaults.cardColors(
@@ -195,21 +204,13 @@ fun PostDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row {
-                                Text(
-                                    text = comment.author,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = comment.authorHandle,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
                             Text(
-                                text = comment.timestamp,
+                                text = comment.userName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = dateFormat.format(comment.timestamp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
