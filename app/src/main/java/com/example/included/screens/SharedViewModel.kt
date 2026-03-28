@@ -11,7 +11,6 @@ class SharedViewModel : ViewModel() {
     val posts: List<Post> get() = _posts
 
     init {
-        // Adiciona alguns posts de exemplo
         _posts.addAll(generateSamplePosts())
     }
 
