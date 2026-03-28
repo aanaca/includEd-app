@@ -3,13 +3,16 @@ package com.example.included.screens
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
@@ -18,11 +21,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.included.models.User
+import kotlinx.coroutines.delay
 
 data class Post(
     val id: Int,
@@ -35,8 +41,8 @@ data class Post(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    followers: List<User>,
-    following: List<User>,
+    followers: List<User> = emptyList(), // Valor padrão para evitar erro na MainActivity
+    following: List<User> = emptyList(), // Valor padrão para evitar erro na MainActivity
     posts: List<Post> = listOf(
         Post(1, "Primeiro post! Bem-vindo ao meu perfil.", "10/01/2023 10:00", 5, 10),
         Post(2, "Compartilhando minhas ideias.", "12/01/2023 15:30", 2, 7)
@@ -44,6 +50,7 @@ fun ProfileScreen(
     userName: String = "Nome de Usuário",
     userHandle: String = "@usuarioExemplo",
     userBio: String = "Essa é a bio do usuário. Conte algo sobre você.",
+    userType: String = "Educador", // Educador, Especialista ou Responsável
     createdAt: String = "Criado em 01/01/2023",
     onShowMessage: (String) -> Unit,
     onEditProfile: () -> Unit,
@@ -56,6 +63,17 @@ fun ProfileScreen(
     val listState = rememberLazyListState()
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> profileImageUri = uri }
+
+    // Estado para o mini balão (Tooltip)
+    var showBadgeTooltip by remember { mutableStateOf(false) }
+
+    // Fechar o balão após um tempo
+    if (showBadgeTooltip) {
+        LaunchedEffect(Unit) {
+            delay(2500)
+            showBadgeTooltip = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -77,7 +95,11 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Foto de Perfil
                     Surface(
                         modifier = Modifier
                             .size(100.dp)
@@ -87,7 +109,7 @@ fun ProfileScreen(
                         shadowElevation = 4.dp
                     ) {
                         if (profileImageUri != null) {
-                            Image(painter = rememberAsyncImagePainter(profileImageUri), contentDescription = "Foto de Perfil", modifier = Modifier.fillMaxSize())
+                            Image(painter = rememberAsyncImagePainter(profileImageUri), contentDescription = null, modifier = Modifier.fillMaxSize())
                         } else {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(text = userName.firstOrNull()?.toString() ?: "", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onPrimary)
@@ -95,173 +117,111 @@ fun ProfileScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = userName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                    Text(text = userHandle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Followers and Following counts with click handlers
-                    Row(
-                        modifier = Modifier.clickable { },
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        TextButton(onClick = onFollowersClick) {
-                            Text(
-                                text = "${followers.size} seguidores",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                    // Bloco do Nome com Badge e Tooltip
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        // Tooltip flutuante
+                        AnimatedVisibility(
+                            visible = showBadgeTooltip,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            ) {
+                                Text(
+                                    text = "Perfil verificado: $userType",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
                         }
-                        Text(
-                            text = "•",
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        TextButton(onClick = onFollowingClick) {
-                            Text(
-                                text = "${following.size} seguindo",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = userName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            // Ícone do Broche
+                            val badgeEmoji = when(userType) {
+                                "Educador" -> "🎓"
+                                "Especialista" -> "🩺"
+                                "Responsável" -> "🏠"
+                                else -> "✨"
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                                    .clickable { showBadgeTooltip = !showBadgeTooltip },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(badgeEmoji, fontSize = 16.sp)
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = userHandle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+
+                    // Estatísticas
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        TextButton(onClick = onFollowersClick) {
+                            Text("${followers.size} seguidores", style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text("•", modifier = Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.outline)
+                        TextButton(onClick = onFollowingClick) {
+                            Text("${following.size} seguindo", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+
                     Text(text = createdAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(text = userBio, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                    OutlinedButton(onClick = { launcher.launch("image/*") }, modifier = Modifier.padding(top = 12.dp)) {
-                        Text("Alterar Foto de Perfil")
-                    }
                 }
             }
 
-            item { Divider(); Text("Posts", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp)) }
+            item {
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                Text("Posts", style = MaterialTheme.typography.titleMedium)
+            }
 
             itemsIndexed(posts) { _, post ->
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onPostClick(post) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
+                    modifier = Modifier.fillMaxWidth().clickable { onPostClick(post) },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        // Foto de perfil do post (usando a mesma do perfil)
-                        Surface(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape),
-                            color = MaterialTheme.colorScheme.primary
-                        ) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                        Surface(modifier = Modifier.size(40.dp).clip(CircleShape), color = MaterialTheme.colorScheme.primary) {
                             if (profileImageUri != null) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(profileImageUri),
-                                    contentDescription = "Foto de Perfil",
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                                Image(painter = rememberAsyncImagePainter(profileImageUri), contentDescription = null, modifier = Modifier.fillMaxSize())
                             } else {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = userName.firstOrNull()?.toString() ?: "",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onPrimary
-                                    )
+                                    Text(text = userName.firstOrNull()?.toString() ?: "", color = MaterialTheme.colorScheme.onPrimary)
                                 }
                             }
                         }
-
                         Spacer(modifier = Modifier.width(12.dp))
-
-                        // Conteúdo do post
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            // Cabeçalho com nome e handle
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row {
-                                    Text(
-                                        text = userName,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = userHandle,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.outline
-                                    )
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(text = userName, fontWeight = FontWeight.Bold)
+                                    Text(text = " " + when(userType){
+                                        "Educador" -> "🎓"
+                                        "Especialista" -> "🩺"
+                                        else -> "🏠"
+                                    }, fontSize = 12.sp)
                                 }
-                                Text(
-                                    text = post.timestamp,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
+                                Text(text = post.timestamp, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                             }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            // Conteúdo do post
-                            Text(
-                                text = post.content,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Ícones de interação com estados
-                            var isLiked by remember { mutableStateOf(false) }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
-                            ) {
-                                // Botão de comentários
-                                TextButton(
-                                    onClick = { onShowMessage("Comentários em breve!") },
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            "💬 ${post.commentCount}",
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
-                                    }
-                                }
-
-                                // Botão de curtir
-                                TextButton(
-                                    onClick = {
-                                        isLiked = !isLiked
-                                        onShowMessage(if (isLiked) "Post curtido!" else "Curtida removida")
-                                    },
-                                    contentPadding = PaddingValues(0.dp)
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            "${if (isLiked) "❤️" else "♡"} ${post.likeCount + (if (isLiked) 1 else 0)}",
-                                            color = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                                        )
-                                    }
-                                }
-                            }
+                            Text(text = post.content, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
             }
         }
     }
