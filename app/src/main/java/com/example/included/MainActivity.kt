@@ -11,18 +11,17 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.*
 import androidx.activity.viewModels
 import com.example.included.components.BottomBar
-import com.example.included.models.Post
 import com.example.included.models.User
 import com.example.included.screens.*
 import com.example.included.ui.theme.Theme
 
 class MainActivity : ComponentActivity() {
     private val sharedViewModel: SharedViewModel by viewModels()
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Dados de exemplo para followers e following
         val exampleFollowers = listOf(
             User("1", "João Silva", "@joao.silva", null, "Desenvolvedor Android", 50, 45),
             User("2", "Maria Santos", "@maria.santos", null, "Designer UX/UI", 120, 80),
@@ -48,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             "login", "edit_profile", "settings", "followers", "following",
                             "math_detail", "reading_detail",
                             "sequencing_activity_route", "pattern_activity_route",
-                            "memory_game_route" // Adicionado para a navegação do Memory Game
+                            "memory_game_route"
                         )
                         if (currentRoute !in routesWithoutBottomBar) {
                             BottomBar(currentRoute, { route ->
@@ -61,11 +60,21 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { paddingValues ->
-                    NavHost(navController, startDestination = "login", modifier = Modifier.padding(paddingValues)) {
+                    NavHost(
+                        navController,
+                        startDestination = "login",
+                        modifier = Modifier.padding(paddingValues)
+                    ) {
                         composable("login") {
                             LoginScreen(
-                                onLoginSuccess = { navController.navigate("home") { popUpTo("login") { inclusive = true } } },
-                                onShowMessage = { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
+                                onLoginSuccess = {
+                                    navController.navigate("home") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
+                                },
+                                onShowMessage = {
+                                    Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
+                                }
                             )
                         }
 
@@ -88,10 +97,11 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("search") {
-                            SearchScreen { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
+                            SearchScreen {
+                                Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
+                            }
                         }
 
-                        // ROTA DE LISTA DE ATIVIDADES (ActivitiesScreen)
                         composable("activities_list") {
                             ActivitiesScreen(
                                 onCategoryClick = { categoryRoute ->
@@ -102,58 +112,41 @@ class MainActivity : ComponentActivity() {
 
                         composable("math_detail") {
                             MathActivitiesScreen(
-                                onBackClick = {
-                                    navController.popBackStack()
-                                }
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
 
                         composable("reading_detail") {
                             ReadingActivitiesScreen(
-                                onBackClick = {
-                                    navController.popBackStack()
-                                }
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
 
-                        // ROTA PRINCIPAL: LÓGICA -> MENU
                         composable("logic_detail") {
                             LogicMenuScreen(
                                 onBackClick = { navController.popBackStack() },
                                 onNavigateToSequencing = { navController.navigate("sequencing_activity_route") },
                                 onNavigateToPattern = { navController.navigate("pattern_activity_route") }
-                                // Não precisa adicionar a navegação de memória aqui, pois ela será tratada no ActivitiesScreen.
                             )
                         }
 
-                        // ROTA ESPECÍFICA: Lógica - Sequência de Ações
                         composable("sequencing_activity_route") {
                             SequencingScreen(
-                                onBackClick = {
-                                    navController.popBackStack()
-                                }
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
 
-                        // ROTA ESPECÍFICA: Lógica - Padrões Visuais
                         composable("pattern_activity_route") {
                             PatternScreen(
-                                onBackClick = {
-                                    navController.popBackStack()
-                                }
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
 
-                        // ROTA NOVA E CORRETA: JOGO DA MEMÓRIA
                         composable("memory_game_route") {
                             MemoryGameScreen(
-                                onBackClick = {
-                                    navController.popBackStack()
-                                }
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
-
-                        // ... (Resto das rotas, omitido para brevidade)
 
                         composable("notifications") {
                             NotificationsScreen(onNotificationClick = { postId ->
@@ -161,14 +154,20 @@ class MainActivity : ComponentActivity() {
                             })
                         }
 
+
                         composable("profile") {
                             ProfileScreen(
+                                sharedViewModel = sharedViewModel,
                                 followers = exampleFollowers,
                                 following = exampleFollowing,
-                                onShowMessage = { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() },
+                                onShowMessage = {
+                                    Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
+                                },
                                 onEditProfile = { navController.navigate("edit_profile") },
                                 onSettings = { navController.navigate("settings") },
-                                onPostClick = { post -> navController.navigate("post_detail/${post.id}") },
+                                onPostClick = { post ->
+                                    navController.navigate("post_detail/${post.id}")
+                                },
                                 onFollowersClick = { navController.navigate("followers") },
                                 onFollowingClick = { navController.navigate("following") },
                                 onUserClick = { user ->
@@ -197,10 +196,16 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         composable("edit_profile") {
                             EditProfileScreen(
                                 onBack = { navController.popBackStack() },
-                                onSave = { _, _, _, _ ->
+                                initialName = sharedViewModel.userProfile.name,
+                                initialHandle = sharedViewModel.userProfile.handle,
+                                initialBio = sharedViewModel.userProfile.bio,
+                                initialProfileImage = sharedViewModel.userProfile.profileImageUri,
+                                onSave = { name, handle, bio, imageUri ->
+                                    sharedViewModel.updateProfile(name, handle, bio, imageUri)
                                     Toast.makeText(this@MainActivity, "Perfil atualizado!", Toast.LENGTH_SHORT).show()
                                     navController.popBackStack()
                                 }
@@ -210,7 +215,9 @@ class MainActivity : ComponentActivity() {
                         composable("settings") {
                             SettingsScreen(
                                 onBack = { navController.popBackStack() },
-                                onShowMessage = { Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show() }
+                                onShowMessage = {
+                                    Toast.makeText(this@MainActivity, it, Toast.LENGTH_SHORT).show()
+                                }
                             )
                         }
 
@@ -227,8 +234,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-
-
                     }
                 }
             }
