@@ -17,7 +17,7 @@ data class UserProfile(
     val name: String = "Nome de Usuário",
     val handle: String = "@usuarioExemplo",
     val bio: String = "Essa é a bio do usuário. Conte algo sobre você.",
-    val userType: String = "Educador",
+    val userType: String = "",
     val profileImageUri: Uri? = null
 )
 
@@ -27,12 +27,13 @@ class SharedViewModel : ViewModel() {
     var userProfile by mutableStateOf(UserProfile())
         private set
 
-    fun updateProfile(name: String, handle: String, bio: String, imageUri: Uri?) {
+    fun updateProfile(name: String, handle: String, bio: String, imageUri: Uri?, userType: String = userProfile.userType) {
         userProfile = userProfile.copy(
             name = name,
             handle = handle,
             bio = bio,
-            profileImageUri = imageUri
+            profileImageUri = imageUri,
+            userType = userType
         )
         val updatedPosts = _posts.map { post ->
             if (post.userId == "user_atual") {
@@ -164,6 +165,7 @@ class SharedViewModel : ViewModel() {
 }
 
 private fun generateSamplePosts(): List<Post> {
+    val tipos = listOf("Educador", "Especialista", "Responsável")
     return List(5) { index ->
         Post(
             id = index.toString(),
@@ -173,7 +175,8 @@ private fun generateSamplePosts(): List<Post> {
             content = "Post exemplo $index #includEd",
             timestamp = Date(System.currentTimeMillis() - (index * 3600000L)),
             likes = (0..10).random(),
-            commentCount = (0..5).random()
+            commentCount = (0..5).random(),
+            userType = if (index == 0) "" else tipos.random()
         )
     }
 }
