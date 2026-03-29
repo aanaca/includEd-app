@@ -1,8 +1,11 @@
 package com.example.included.screens
 
+import android.net.Uri
+import android.util.Patterns
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -16,11 +19,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.included.R
-import android.util.Patterns
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
+    sharedViewModel: SharedViewModel,
     onLoginSuccess: () -> Unit,
     onShowMessage: (String) -> Unit
 ) {
@@ -28,18 +31,22 @@ fun LoginScreen(
     var confirmarEmail by remember { mutableStateOf("") }
     var senha by remember { mutableStateOf("") }
     var confirmarSenha by remember { mutableStateOf("") }
+    var nome by remember { mutableStateOf("") }
+    var handle by remember { mutableStateOf("") }
     var isRegistrando by remember { mutableStateOf(false) }
+    var emailCadastrado by remember { mutableStateOf("") }
 
-    // Novo estado para o tipo de perfil
-    val tiposPerfil = listOf("Educador", "Especialista", "Responsável")
+    val tiposPerfil = listOf(
+        Pair("Educador", "🎓"),
+        Pair("Especialista", "🩺"),
+        Pair("Responsável", "❤️")
+    )
     var tipoPerfilSelecionado by remember { mutableStateOf("") }
 
-    // Estados para recuperação de senha
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
     var showPasswordSentScreen by remember { mutableStateOf(false) }
 
-    // ScrollState para garantir que campos não fiquem escondidos pelo teclado no cadastro
     val scrollState = rememberScrollState()
 
     if (showPasswordSentScreen) {
@@ -56,7 +63,7 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Verifique seu e-mail ($forgotEmail) e siga as instruções para redefinir sua senha.",
+                text = "Verifique o seu e-mail ($forgotEmail) e siga as instruções para redefinir a sua senha.",
                 style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(32.dp))
@@ -72,7 +79,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp)
-                .verticalScroll(scrollState), // Adicionado scroll para telas menores
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -95,11 +102,38 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Campo Email
+            if (isRegistrando) {
+                // Campo Nome
+                OutlinedTextField(
+                    value = nome,
+                    onValueChange = { nome = it },
+                    label = { Text("Nome completo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Campo Handle
+                OutlinedTextField(
+                    value = handle,
+                    onValueChange = {
+                        // Garante que começa com @
+                        handle = if (it.startsWith("@")) it else "@$it"
+                    },
+                    label = { Text("Usuário (@)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Campo de E-mail
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") },
+                label = { Text("E-mail") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth()
@@ -107,11 +141,10 @@ fun LoginScreen(
 
             if (isRegistrando) {
                 Spacer(modifier = Modifier.height(16.dp))
-                // Campo Confirmar Email
                 OutlinedTextField(
                     value = confirmarEmail,
                     onValueChange = { confirmarEmail = it },
-                    label = { Text("Confirmar Email") },
+                    label = { Text("Confirmar E-mail") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier.fillMaxWidth()
@@ -119,7 +152,6 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // SEÇÃO DE SELEÇÃO DE TIPO DE PERFIL
                 Text(
                     text = "Eu sou:",
                     style = MaterialTheme.typography.bodyLarge,
@@ -131,14 +163,19 @@ fun LoginScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    tiposPerfil.forEach { tipo ->
+                    tiposPerfil.forEach { (tipo, icone) ->
                         val isSelected = tipoPerfilSelecionado == tipo
                         FilterChip(
                             selected = isSelected,
                             onClick = { tipoPerfilSelecionado = tipo },
-                            label = { Text(tipo) },
+                            label = {
+                                Text(
+                                    text = "$icone $tipo",
+                                    fontSize = 11.sp
+                                )
+                            },
                             modifier = Modifier.weight(1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primary,
@@ -151,7 +188,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo Senha
             OutlinedTextField(
                 value = senha,
                 onValueChange = { senha = it },
@@ -164,7 +200,6 @@ fun LoginScreen(
 
             if (isRegistrando) {
                 Spacer(modifier = Modifier.height(16.dp))
-                // Campo Confirmar Senha
                 OutlinedTextField(
                     value = confirmarSenha,
                     onValueChange = { confirmarSenha = it },
@@ -187,12 +222,18 @@ fun LoginScreen(
                     onClick = {
                         if (isRegistrando) {
                             when {
+                                nome.isEmpty() -> {
+                                    onShowMessage("Digite o seu nome")
+                                }
+                                handle.isEmpty() || handle == "@" -> {
+                                    onShowMessage("Digite o seu usuário (@)")
+                                }
                                 email.isEmpty() || confirmarEmail.isEmpty() ||
                                         senha.isEmpty() || confirmarSenha.isEmpty() -> {
                                     onShowMessage("Preencha todos os campos")
                                 }
                                 email != confirmarEmail -> {
-                                    onShowMessage("Os emails não correspondem")
+                                    onShowMessage("Os e-mails não correspondem")
                                 }
                                 tipoPerfilSelecionado.isEmpty() -> {
                                     onShowMessage("Selecione o seu tipo de perfil")
@@ -204,8 +245,25 @@ fun LoginScreen(
                                     onShowMessage("A senha deve ter pelo menos 6 caracteres")
                                 }
                                 else -> {
+                                    // Salva as informações do perfil no SharedViewModel
+                                    sharedViewModel.updateProfile(
+                                        name = nome,
+                                        handle = handle,
+                                        bio = "Olá! Sou ${tipoPerfilSelecionado} no IncludEd.",
+                                        imageUri = null,
+                                        userType = tipoPerfilSelecionado
+                                    )
                                     onShowMessage("Conta de $tipoPerfilSelecionado criada com sucesso!")
+                                    emailCadastrado = email
                                     isRegistrando = false
+                                    // Limpa campos
+                                    email = emailCadastrado
+                                    confirmarEmail = ""
+                                    senha = ""
+                                    confirmarSenha = ""
+                                    nome = ""
+                                    handle = ""
+                                    tipoPerfilSelecionado = ""
                                 }
                             }
                         } else {
@@ -217,7 +275,7 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         if (isRegistrando) "Cadastrar" else "Entrar",
@@ -227,21 +285,20 @@ fun LoginScreen(
                 }
 
                 if (!isRegistrando) {
-                    TextButton(
-                        onClick = { showForgotPasswordDialog = true }
-                    ) {
-                        Text("Esqueceu sua senha?")
+                    TextButton(onClick = { showForgotPasswordDialog = true }) {
+                        Text("Esqueceu a sua senha?")
                     }
                 }
 
                 TextButton(
                     onClick = {
                         isRegistrando = !isRegistrando
-                        // Reset de campos ao alternar
                         email = ""
                         confirmarEmail = ""
                         senha = ""
                         confirmarSenha = ""
+                        nome = ""
+                        handle = ""
                         tipoPerfilSelecionado = ""
                     }
                 ) {
@@ -249,7 +306,7 @@ fun LoginScreen(
                         if (isRegistrando)
                             "Já tem uma conta? Faça login"
                         else
-                            "Não tem uma conta? Cadastre-se"
+                            "Não tem uma conta? Registe-se"
                     )
                 }
             }
@@ -262,12 +319,12 @@ fun LoginScreen(
                 title = { Text("Recuperar Senha") },
                 text = {
                     Column {
-                        Text("Digite seu email para recuperar a senha:")
+                        Text("Digite o seu e-mail para recuperar a senha:")
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = forgotEmail,
                             onValueChange = { forgotEmail = it },
-                            label = { Text("Email") },
+                            label = { Text("E-mail") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -278,8 +335,9 @@ fun LoginScreen(
                     Button(
                         onClick = {
                             when {
-                                forgotEmail.isEmpty() -> onShowMessage("Digite um email")
-                                !Patterns.EMAIL_ADDRESS.matcher(forgotEmail).matches() -> onShowMessage("Digite um email válido")
+                                forgotEmail.isEmpty() -> onShowMessage("Digite um e-mail")
+                                !Patterns.EMAIL_ADDRESS.matcher(forgotEmail).matches() ->
+                                    onShowMessage("Digite um e-mail válido")
                                 else -> {
                                     showForgotPasswordDialog = false
                                     showPasswordSentScreen = true
@@ -291,12 +349,10 @@ fun LoginScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(
-                        onClick = {
-                            showForgotPasswordDialog = false
-                            forgotEmail = ""
-                        }
-                    ) {
+                    TextButton(onClick = {
+                        showForgotPasswordDialog = false
+                        forgotEmail = ""
+                    }) {
                         Text("Cancelar")
                     }
                 }
