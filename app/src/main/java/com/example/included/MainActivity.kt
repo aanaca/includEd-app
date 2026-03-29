@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("login") {
                             LoginScreen(
+                                sharedViewModel = sharedViewModel,
                                 onLoginSuccess = {
                                     navController.navigate("home") {
                                         popUpTo("login") { inclusive = true }
