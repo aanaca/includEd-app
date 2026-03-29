@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.included.models.Post
 import java.text.SimpleDateFormat
@@ -26,7 +27,8 @@ fun PostItem(
     onCommentClick: (Post) -> Unit,
     onDeleteClick: ((Post) -> Unit)? = null,
     isCurrentUserPost: Boolean = false,
-    profileImageUrl: String? = null
+    profileImageUrl: String? = null,
+    userType: String = ""
 ) {
     Card(
         modifier = Modifier
@@ -47,10 +49,7 @@ fun PostItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Foto de perfil e informações do usuário
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     // Foto de perfil
                     Surface(
                         modifier = Modifier
@@ -77,13 +76,29 @@ fun PostItem(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Nome e handle do usuário
+                    // Nome, broche e handle
                     Column {
-                        Text(
-                            text = post.userName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = post.userName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            // Broche: usa userType do parâmetro (usuário atual) ou do post (outros)
+                            val broche = if (isCurrentUserPost) userType else post.userType
+                            if (broche.isNotEmpty()) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = when (broche) {
+                                        "Educador" -> "🎓"
+                                        "Especialista" -> "🩺"
+                                        "Responsável" -> "❤️"
+                                        else -> "✨"
+                                    },
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
                         Text(
                             text = post.userHandle,
                             style = MaterialTheme.typography.bodyMedium,
@@ -97,10 +112,7 @@ fun PostItem(
                     var showMenu by remember { mutableStateOf(false) }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "Mais opções"
-                            )
+                            Icon(Icons.Default.MoreVert, contentDescription = "Mais opções")
                         }
                         DropdownMenu(
                             expanded = showMenu,
