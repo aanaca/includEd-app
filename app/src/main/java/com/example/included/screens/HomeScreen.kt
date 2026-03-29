@@ -91,7 +91,8 @@ fun HomeScreen(
                             onShowMessage("Post deletado")
                         }
                     } else null,
-                    isCurrentUserPost = post.userId == "user_atual"
+                    isCurrentUserPost = post.userId == "user_atual",
+                    userType = if (post.userId == "user_atual") sharedViewModel.userProfile.userType else ""
                 )
                 Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
             }
