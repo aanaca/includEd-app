@@ -36,7 +36,6 @@ fun ProfileScreen(
     sharedViewModel: SharedViewModel,
     followers: List<User> = emptyList(),
     following: List<User> = emptyList(),
-    userType: String = "Educador",
     createdAt: String = "Criado em 01/01/2023",
     onShowMessage: (String) -> Unit,
     onEditProfile: () -> Unit,
@@ -49,6 +48,7 @@ fun ProfileScreen(
     val listState = rememberLazyListState()
     val profile = sharedViewModel.userProfile
     val myPosts = sharedViewModel.myPosts
+    val userType = profile.userType
     val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("pt", "BR"))
 
     var showBadgeTooltip by remember { mutableStateOf(false) }
@@ -145,7 +145,7 @@ fun ProfileScreen(
                             val badgeEmoji = when (userType) {
                                 "Educador" -> "🎓"
                                 "Especialista" -> "🩺"
-                                "Responsável" -> "🏠"
+                                "Responsável" -> "❤️"
                                 else -> "✨"
                             }
                             Box(
