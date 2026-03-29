@@ -47,16 +47,21 @@ class MainActivity : ComponentActivity() {
                             "login", "edit_profile", "settings", "followers", "following",
                             "math_detail", "reading_detail",
                             "sequencing_activity_route", "pattern_activity_route",
-                            "memory_game_route"
+                            "memory_game_route", "chat/{conversationId}"
                         )
                         if (currentRoute !in routesWithoutBottomBar) {
-                            BottomBar(currentRoute, { route ->
-                                navController.navigate(route) {
-                                    popUpTo(navController.graph.startDestinationId)
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }, notificationCount)
+                            BottomBar(
+                                currentRoute = currentRoute,
+                                onNavigate = { route ->
+                                    navController.navigate(route) {
+                                        popUpTo(navController.graph.startDestinationId)
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                notificationCount = notificationCount,
+                                unreadMessagesCount = sharedViewModel.conversations.sumOf { it.unreadCount }
+                            )
                         }
                     }
                 ) { paddingValues ->
@@ -154,7 +159,6 @@ class MainActivity : ComponentActivity() {
                             })
                         }
 
-
                         composable("profile") {
                             ProfileScreen(
                                 sharedViewModel = sharedViewModel,
@@ -196,7 +200,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
                         composable("edit_profile") {
                             EditProfileScreen(
                                 onBack = { navController.popBackStack() },
@@ -233,6 +236,24 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             }
+                        }
+
+                        composable("messages") {
+                            ConversationsScreen(
+                                sharedViewModel = sharedViewModel,
+                                onOpenChat = { conversationId ->
+                                    navController.navigate("chat/$conversationId")
+                                }
+                            )
+                        }
+
+                        composable("chat/{conversationId}") { backStackEntry ->
+                            val conversationId = backStackEntry.arguments?.getString("conversationId") ?: ""
+                            ChatScreen(
+                                conversationId = conversationId,
+                                sharedViewModel = sharedViewModel,
+                                onBack = { navController.popBackStack() }
+                            )
                         }
                     }
                 }
