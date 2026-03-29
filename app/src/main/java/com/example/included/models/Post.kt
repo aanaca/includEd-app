@@ -13,7 +13,8 @@ data class Post(
     val isLikedByCurrentUser: Boolean = false,
     val comments: List<Comment> = emptyList(),
     val commentCount: Int = 0,
-    val attachments: List<Attachment> = emptyList()
+    val attachments: List<Attachment> = emptyList(),
+    val userType: String = ""
 )
 
 data class Attachment(
