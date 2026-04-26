@@ -125,21 +125,70 @@ class SharedViewModel : ViewModel() {
     }
 
     private fun simulateReply(conversationId: String) {
-        val replies = listOf(
-            "Entendi! Obrigado pela mensagem 😊",
-            "Ótimo, vou verificar isso!",
-            "Pode deixar, já estou vendo.",
-            "Perfeito! Qualquer dúvida é só chamar.",
-            "Certo, obrigado pelo contato!",
-            "Recebi! Vou responder em breve."
-        )
         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
             val idx = _conversations.indexOfFirst { it.id == conversationId }
             if (idx == -1) return@postDelayed
+
+            val lastMessage = _conversations[idx].messages
+                .lastOrNull { it.senderId == "user_atual" }?.content?.lowercase() ?: ""
+
+            val replyText = when {
+                lastMessage.contains("olá") || lastMessage.contains("oi") ||
+                        lastMessage.contains("bom dia") || lastMessage.contains("boa tarde") ||
+                        lastMessage.contains("boa noite") ->
+                    "Olá! Tudo bem? Como posso te ajudar? 😊"
+
+                lastMessage.contains("tudo") && lastMessage.contains("bem") ||
+                        lastMessage.contains("tudo bem") ->
+                    "Tudo ótimo, obrigado! E você, como está?"
+
+                lastMessage.contains("inclusão") || lastMessage.contains("inclusivo") ||
+                        lastMessage.contains("incluir") ->
+                    "A inclusão é fundamental! Aqui no IncludEd tentamos facilitar esse processo. Tem alguma dúvida específica?"
+
+                lastMessage.contains("atividade") || lastMessage.contains("exercício") ||
+                        lastMessage.contains("tarefa") ->
+                    "As atividades do app foram pensadas para diferentes perfis. Você já experimentou as de lógica e memória?"
+
+                lastMessage.contains("ajuda") || lastMessage.contains("dúvida") ||
+                        lastMessage.contains("pergunta") ->
+                    "Claro, pode perguntar! Estou aqui para ajudar no que precisar 😊"
+
+                lastMessage.contains("obrigado") || lastMessage.contains("obrigada") ||
+                        lastMessage.contains("valeu") ->
+                    "De nada! Qualquer coisa é só chamar 😊"
+
+                lastMessage.contains("material") || lastMessage.contains("documento") ||
+                        lastMessage.contains("arquivo") ->
+                    "Recebi o material! Vou dar uma olhada e te retorno em breve."
+
+                lastMessage.contains("reunião") || lastMessage.contains("encontro") ||
+                        lastMessage.contains("quando") ->
+                    "Podemos marcar para essa semana! Qual horário fica melhor para você?"
+
+                lastMessage.contains("projeto") || lastMessage.contains("trabalho") ||
+                        lastMessage.contains("tcc") ->
+                    "O projeto está ficando ótimo! Posso ajudar em alguma parte específica?"
+
+                lastMessage.contains("problema") || lastMessage.contains("erro") ||
+                        lastMessage.contains("não funciona") ->
+                    "Entendi o problema. Vamos resolver isso juntos, pode me dar mais detalhes?"
+
+                lastMessage.contains("parabéns") || lastMessage.contains("ótimo") ||
+                        lastMessage.contains("excelente") ->
+                    "Muito obrigado! Fico feliz em saber disso 😊"
+
+                lastMessage.isEmpty() ->
+                    "Recebi seu arquivo! Vou verificar e te retorno em breve."
+
+                else ->
+                    "Entendi! Vou verificar isso e te respondo logo. Obrigado pela mensagem 😊"
+            }
+
             val reply = Message(
                 id = UUID.randomUUID().toString(),
                 senderId = _conversations[idx].participantId,
-                content = replies.random(),
+                content = replyText,
                 timestamp = Date(),
                 isRead = true
             )
@@ -175,7 +224,7 @@ private fun generateSamplePosts(): List<Post> {
             content = "Post exemplo $index #includEd",
             timestamp = Date(System.currentTimeMillis() - (index * 3600000L)),
             likes = (0..10).random(),
-            commentCount = (0..5).random(),
+            commentCount = 0,
             userType = if (index == 0) "" else tipos.random()
         )
     }
