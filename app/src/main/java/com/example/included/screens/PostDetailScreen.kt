@@ -5,13 +5,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import coil.compose.rememberAsyncImagePainter
@@ -25,8 +26,6 @@ import java.util.*
 fun PostDetailScreen(
     post: Post,
     onBack: () -> Unit,
-    userName: String = "Nome de Usuário",
-    userHandle: String = "@usuarioExemplo",
     profileImageUri: String? = null,
     onShowMessage: (String) -> Unit = {}
 ) {
@@ -34,24 +33,7 @@ fun PostDetailScreen(
 
     var isLiked by remember { mutableStateOf(post.isLikedByCurrentUser) }
     var likeCount by remember { mutableStateOf(post.likes) }
-    val comments = post.comments.ifEmpty {
-        listOf(
-            Comment(
-                id = "1",
-                userId = "user1",
-                userName = "João Silva",
-                content = "Comentário legal!",
-                timestamp = Date()
-            ),
-            Comment(
-                id = "2",
-                userId = "user2",
-                userName = "Maria Santos",
-                content = "Gostei do post!",
-                timestamp = Date()
-            )
-        )
-    }
+    val comments = post.comments // <- CORRIGIDO: usa apenas os comentários reais do post
 
     Scaffold(
         topBar = {
@@ -59,7 +41,10 @@ fun PostDetailScreen(
                 title = { Text("Post") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar"
+                        )
                     }
                 }
             )
@@ -134,7 +119,6 @@ fun PostDetailScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
 
-
                         Text(
                             text = dateFormat.format(post.timestamp),
                             style = MaterialTheme.typography.bodySmall,
@@ -179,6 +163,7 @@ fun PostDetailScreen(
                 }
             }
 
+            // Seção de comentários
             item {
                 Text(
                     "Comentários",
@@ -188,7 +173,22 @@ fun PostDetailScreen(
                 Divider()
             }
 
+            // Mensagem quando não há comentários
+            if (comments.isEmpty()) {
+                item {
+                    Text(
+                        text = "Nenhum comentário ainda. Seja o primeiro!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp)
+                    )
+                }
+            }
 
+            // Lista de comentários reais
             items(comments) { comment ->
                 Card(
                     colors = CardDefaults.cardColors(
